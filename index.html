@@ -1,122 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title></title>
+<script>
+  const gradient = document.getElementById("gradient");
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  let targetX = 50;
+  let targetY = 50;
 
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #111;
-    }
+  let currentX = 50;
+  let currentY = 50;
 
-    body {
-      position: relative;
-    }
+  let inactivityTimer;
+  let isInteracting = false;
 
-    .gradient {
-      position: absolute;
-      inset: -30%;
-      width: 160%;
-      height: 160%;
+  const idleDelay = 1200; // milliseconds before returning to center
 
-      background:
-        radial-gradient(
-          circle at var(--x, 50%) var(--y, 50%),
-          rgba(255, 220, 190, 0.95),
-          transparent 28%
-        ),
-        radial-gradient(
-          circle at 25% 30%,
-          rgba(195, 210, 255, 0.9),
-          transparent 35%
-        ),
-        radial-gradient(
-          circle at 75% 65%,
-          rgba(235, 190, 220, 0.9),
-          transparent 38%
-        ),
-        radial-gradient(
-          circle at 50% 80%,
-          rgba(180, 225, 215, 0.8),
-          transparent 40%
-        ),
-        #ebe7e2;
+  function setTarget(x, y) {
+    targetX = x;
+    targetY = y;
 
-      filter: blur(35px);
-      animation: drift 18s ease-in-out infinite alternate;
-      transform: scale(1.1);
-    }
+    clearTimeout(inactivityTimer);
 
-    .grain {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.05;
+    inactivityTimer = setTimeout(() => {
+      targetX = 50;
+      targetY = 50;
+      isInteracting = false;
+    }, idleDelay);
+  }
 
-      background-image: url(
-        "data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E"
-      );
-    }
+  function animate() {
+    // Move faster while actively following the cursor/finger
+    // and slightly slower when drifting back to center.
+    const speed = isInteracting ? 0.16 : 0.045;
 
-    @keyframes drift {
-      0% {
-        transform: scale(1.1) translate(-2%, -2%) rotate(0deg);
-      }
+    currentX += (targetX - currentX) * speed;
+    currentY += (targetY - currentY) * speed;
 
-      50% {
-        transform: scale(1.18) translate(3%, 1%) rotate(3deg);
-      }
+    gradient.style.setProperty("--x", `${currentX}%`);
+    gradient.style.setProperty("--y", `${currentY}%`);
 
-      100% {
-        transform: scale(1.12) translate(-1%, 4%) rotate(-2deg);
-      }
-    }
+    requestAnimationFrame(animate);
+  }
 
-    @media (prefers-reduced-motion: reduce) {
-      .gradient {
-        animation: none;
-      }
-    }
-  </style>
-</head>
+  // DESKTOP
+  document.addEventListener("mousemove", (event) => {
+    isInteracting = true;
 
-<body>
+    const x = (event.clientX / window.innerWidth) * 100;
+    const y = (event.clientY / window.innerHeight) * 100;
 
-  <div class="gradient" id="gradient"></div>
-  <div class="grain"></div>
+    setTarget(x, y);
+  });
 
-  <script>
-    const gradient = document.getElementById("gradient");
+  // MOBILE
+  document.addEventListener(
+    "touchstart",
+    (event) => {
+      isInteracting = true;
 
-    document.addEventListener("mousemove", (event) => {
-      const x = (event.clientX / window.innerWidth) * 100;
-      const y = (event.clientY / window.innerHeight) * 100;
-
-      gradient.style.setProperty("--x", `${x}%`);
-      gradient.style.setProperty("--y", `${y}%`);
-    });
-
-    document.addEventListener("touchmove", (event) => {
       const touch = event.touches[0];
 
       const x = (touch.clientX / window.innerWidth) * 100;
       const y = (touch.clientY / window.innerHeight) * 100;
 
-      gradient.style.setProperty("--x", `${x}%`);
-      gradient.style.setProperty("--y", `${y}%`);
-    });
-  </script>
+      setTarget(x, y);
+    },
+    { passive: true }
+  );
 
-</body>
-</html>
+  document.addEventListener(
+    "touchmove",
+    (event) => {
+      isInteracting = true;
+
+      const touch = event.touches[0];
+
+      const x = (touch.clientX / window.innerWidth) * 100;
+      const y = (touch.clientY / window.innerHeight) * 100;
+
+      setTarget(x, y);
+    },
+    { passive: true }
+  );
+
+  document.addEventListener(
+    "touchend",
+    () => {
+      clearTimeout(inactivityTimer);
+
+      inactivityTimer = setTimeout(() => {
+        targetX = 50;
+        targetY = 50;
+        isInteracting = false;
+      }, 200);
+    },
+    { passive: true }
+  );
+
+  document.addEventListener(
+    "touchcancel",
+    () => {
+      targetX = 50;
+      targetY = 50;
+      isInteracting = false;
+    },
+    { passive: true }
+  );
+
+  animate();
+</script>
