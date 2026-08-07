@@ -2,248 +2,112 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
 
-  <title>•</title>
+  <title>emmabroyles.com</title>
 
   <style>
-    :root {
-      --bg: rgb(239, 235, 229);
-    }
-
     * {
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
 
     html {
-      width: 100%;
-      min-height: 100%;
-      scrollbar-width: none;
-    }
-
-    html::-webkit-scrollbar {
-      display: none;
+      background: #05060a;
     }
 
     body {
-      margin: 0;
       width: 100%;
-      min-height: 400vh;
-      background: var(--bg);
-      overflow-x: hidden;
-      overscroll-behavior-x: none;
+      height: 600vh;
+
+      background: #05060a;
+
+      overscroll-behavior: none;
     }
 
-    #scene {
+    canvas {
       position: fixed;
-      inset: 0;
-      overflow: hidden;
-      background: var(--bg);
-    }
-
-    /* ---------------------------------
-       COLOR FIELDS
-    ---------------------------------- */
-
-    .field {
-      position: absolute;
-      width: 70vmax;
-      height: 70vmax;
-
-      left: 50%;
-      top: 50%;
-
-      border-radius: 50%;
-
-      filter: blur(75px);
-      opacity: 0.72;
-
-      will-change: transform, background;
-      pointer-events: none;
-    }
-
-    #field1 {
-      width: 75vmax;
-      height: 75vmax;
-      opacity: 0.72;
-    }
-
-    #field2 {
-      width: 62vmax;
-      height: 62vmax;
-      opacity: 0.63;
-    }
-
-    #field3 {
-      width: 72vmax;
-      height: 72vmax;
-      opacity: 0.55;
-    }
-
-    #field4 {
-      width: 55vmax;
-      height: 55vmax;
-      opacity: 0.57;
-    }
-
-    #field5 {
-      width: 68vmax;
-      height: 68vmax;
-      opacity: 0.48;
-    }
-
-    #field6 {
-      width: 48vmax;
-      height: 48vmax;
-      opacity: 0.45;
-    }
-
-    /* ---------------------------------
-       INTERACTIVE LIGHT
-    ---------------------------------- */
-
-    #light {
-      position: absolute;
-
-      width: 60vmax;
-      height: 60vmax;
-
-      left: 50%;
-      top: 50%;
-
-      transform: translate(-50%, -50%);
-
-      border-radius: 50%;
-
-      background:
-        radial-gradient(
-          circle,
-          rgba(255,255,255,0.80) 0%,
-          rgba(255,255,255,0.32) 20%,
-          rgba(255,255,255,0.10) 37%,
-          rgba(255,255,255,0.00) 67%
-        );
-
-      mix-blend-mode: screen;
-
-      filter: blur(9px);
-
-      pointer-events: none;
-
-      will-change: left, top;
-    }
-
-    /* ---------------------------------
-       SUBTLE CENTER GLOW
-    ---------------------------------- */
-
-    #atmosphere {
-      position: absolute;
-      inset: -10%;
-
-      background:
-        radial-gradient(
-          circle at 50% 48%,
-          rgba(255,255,255,0.26),
-          transparent 36%
-        );
-
-      pointer-events: none;
-    }
-
-    /* ---------------------------------
-       RIPPLE CANVAS
-    ---------------------------------- */
-
-    #ripples {
-      position: absolute;
       inset: 0;
 
       width: 100%;
       height: 100%;
 
-      pointer-events: none;
+      display: block;
 
-      mix-blend-mode: screen;
+      background: #05060a;
     }
 
-    /* ---------------------------------
-       VIGNETTE
-    ---------------------------------- */
+    /* Extremely subtle scroll-position indicator */
+    .progress {
+      position: fixed;
 
-    #vignette {
+      right: 18px;
+      top: 50%;
+
+      width: 1px;
+      height: 72px;
+
+      transform: translateY(-50%);
+
+      background: rgba(255, 255, 255, 0.08);
+
+      z-index: 10;
+
+      pointer-events: none;
+    }
+
+    .progress::after {
+      content: "";
+
       position: absolute;
-      inset: 0;
 
-      background:
-        radial-gradient(
-          ellipse at center,
-          transparent 45%,
-          rgba(20, 20, 25, 0.035) 100%
+      top: 0;
+      left: -1px;
+
+      width: 3px;
+      height: 12px;
+
+      border-radius: 100px;
+
+      background: rgba(255, 255, 255, 0.5);
+
+      transform: translateY(
+        calc(var(--scroll, 0) * 60px)
+      );
+
+      transition: transform 0.08s linear;
+    }
+
+    @media (max-width: 700px) {
+      .progress {
+        right: 10px;
+
+        height: 54px;
+
+        opacity: 0.55;
+      }
+
+      .progress::after {
+        height: 9px;
+
+        transform: translateY(
+          calc(var(--scroll, 0) * 45px)
         );
-
-      pointer-events: none;
-    }
-
-    /* ---------------------------------
-       FILM GRAIN
-    ---------------------------------- */
-
-    #grain {
-      position: absolute;
-      inset: -50%;
-
-      width: 200%;
-      height: 200%;
-
-      opacity: 0.035;
-
-      pointer-events: none;
-
-      background-image:
-        url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-
-      animation: grain 0.25s steps(2) infinite;
-    }
-
-    @keyframes grain {
-      0% {
-        transform: translate(0, 0);
       }
-
-      25% {
-        transform: translate(-2%, 1%);
-      }
-
-      50% {
-        transform: translate(1%, -2%);
-      }
-
-      75% {
-        transform: translate(2%, 2%);
-      }
-
-      100% {
-        transform: translate(-1%, -1%);
-      }
-    }
-
-    /* ---------------------------------
-       INVISIBLE INTERACTION SURFACE
-    ---------------------------------- */
-
-    #interaction {
-      position: absolute;
-      inset: 0;
-
-      z-index: 20;
-
-      touch-action: pan-y;
     }
 
     @media (prefers-reduced-motion: reduce) {
-      #grain {
-        animation: none;
+      body {
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .progress {
+        display: none;
       }
     }
   </style>
@@ -251,723 +115,1584 @@
 
 <body>
 
-  <div id="scene">
+  <canvas
+    id="canvas"
+    aria-label="Interactive generative artwork"
+  ></canvas>
 
-    <div class="field" id="field1"></div>
-    <div class="field" id="field2"></div>
-    <div class="field" id="field3"></div>
-    <div class="field" id="field4"></div>
-    <div class="field" id="field5"></div>
-    <div class="field" id="field6"></div>
-
-    <div id="atmosphere"></div>
-
-    <div id="light"></div>
-
-    <canvas id="ripples"></canvas>
-
-    <div id="vignette"></div>
-    <div id="grain"></div>
-
-    <div id="interaction"></div>
-
-  </div>
+  <div class="progress" id="progress"></div>
 
 
   <script>
-    /* =========================================================
-       SETUP
-    ========================================================= */
+    const canvas = document.getElementById("canvas");
+    const progress = document.getElementById("progress");
 
-    const fields = [
-      document.getElementById("field1"),
-      document.getElementById("field2"),
-      document.getElementById("field3"),
-      document.getElementById("field4"),
-      document.getElementById("field5"),
-      document.getElementById("field6")
-    ];
+    const gl = canvas.getContext("webgl2", {
+      antialias: false,
+      alpha: false,
+      powerPreference: "high-performance"
+    });
 
-    const light = document.getElementById("light");
-    const interaction = document.getElementById("interaction");
-
-    const canvas = document.getElementById("ripples");
-    const ctx = canvas.getContext("2d");
-
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-
-    let dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-    let reducedMotion =
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!gl) {
+      document.body.style.background =
+        "radial-gradient(circle at 50% 45%, #24304a, #08090d 65%, #020305)";
+      throw new Error("WebGL2 is not supported.");
+    }
 
 
-    /* =========================================================
-       COLOR PALETTES
+    /* ============================================================
+       VERTEX SHADER
+    ============================================================ */
 
-       Scrolling slowly moves between these worlds.
-    ========================================================= */
+    const vertexShaderSource = `#version 300 es
 
-    const palettes = [
+      in vec2 a_position;
 
-      // 1 — Porcelain / sunrise
-      {
-        bg: [239, 235, 229],
+      void main() {
+        gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+    `;
 
-        colors: [
-          [243, 181, 176],   // coral
-          [181, 198, 239],   // periwinkle
-          [194, 226, 213],   // mint
-          [244, 217, 174],   // gold
-          [220, 187, 226],   // lavender
-          [177, 220, 226]    // aqua
-        ]
-      },
 
-      // 2 — Orchid / ocean
-      {
-        bg: [226, 227, 235],
+    /* ============================================================
+       FRAGMENT SHADER
+    ============================================================ */
 
-        colors: [
-          [174, 184, 239],
-          [224, 176, 213],
-          [155, 212, 218],
-          [235, 192, 167],
-          [184, 165, 222],
-          [202, 225, 188]
-        ]
-      },
+    const fragmentShaderSource = `#version 300 es
 
-      // 3 — Twilight
-      {
-        bg: [49, 52, 72],
+      precision highp float;
 
-        colors: [
-          [118, 100, 191],
-          [179, 91, 159],
-          [69, 152, 172],
-          [225, 132, 119],
-          [102, 119, 199],
-          [85, 185, 163]
-        ]
-      },
+      uniform vec2 u_resolution;
 
-      // 4 — Dream
-      {
-        bg: [225, 216, 225],
+      uniform float u_time;
+      uniform float u_scroll;
 
-        colors: [
-          [218, 157, 180],
-          [151, 175, 227],
-          [163, 217, 206],
-          [229, 189, 145],
-          [186, 155, 214],
-          [137, 200, 220]
-        ]
+      uniform vec2 u_pointer;
+      uniform vec2 u_velocity;
+
+      uniform float u_presence;
+      uniform float u_down;
+
+      uniform float u_pulse;
+      uniform float u_seed;
+
+      out vec4 outColor;
+
+
+      #define PI 3.14159265359
+      #define TAU 6.28318530718
+
+
+      /* ----------------------------------------------------------
+         RANDOM + NOISE
+      ---------------------------------------------------------- */
+
+      float hash21(vec2 p) {
+
+        p = fract(
+          p * vec2(123.34, 456.21)
+        );
+
+        p += dot(
+          p,
+          p + 45.32
+        );
+
+        return fract(
+          p.x * p.y
+        );
       }
 
-    ];
+
+      float noise(vec2 p) {
+
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+
+        f = f * f * (
+          3.0 - 2.0 * f
+        );
+
+        float a = hash21(i);
+        float b = hash21(i + vec2(1.0, 0.0));
+        float c = hash21(i + vec2(0.0, 1.0));
+        float d = hash21(i + vec2(1.0, 1.0));
+
+        return mix(
+          mix(a, b, f.x),
+          mix(c, d, f.x),
+          f.y
+        );
+      }
 
 
-    /* =========================================================
-       HELPERS
-    ========================================================= */
+      mat2 rotate2D(float angle) {
 
-    function lerp(a, b, amount) {
-      return a + (b - a) * amount;
+        float s = sin(angle);
+        float c = cos(angle);
+
+        return mat2(
+          c, -s,
+          s,  c
+        );
+      }
+
+
+      float fbm(vec2 p) {
+
+        float value = 0.0;
+        float amplitude = 0.5;
+
+        mat2 rotation =
+          rotate2D(0.48);
+
+        for (
+          int i = 0;
+          i < 6;
+          i++
+        ) {
+
+          value +=
+            amplitude *
+            noise(p);
+
+          p =
+            rotation *
+            p *
+            2.03 +
+            17.17;
+
+          amplitude *= 0.5;
+        }
+
+        return value;
+      }
+
+
+
+      /* ----------------------------------------------------------
+         IRIDESCENT COLOR SYSTEM
+      ---------------------------------------------------------- */
+
+      vec3 palette(
+        float t,
+        float phase
+      ) {
+
+        vec3 a =
+          vec3(
+            0.45,
+            0.44,
+            0.50
+          );
+
+        vec3 b =
+          vec3(
+            0.52,
+            0.46,
+            0.50
+          );
+
+        vec3 c =
+          vec3(
+            1.00,
+            0.93,
+            0.82
+          );
+
+        vec3 d =
+          vec3(
+            0.02 + phase * 0.10,
+            0.15 + phase * 0.05,
+            0.33 - phase * 0.07
+          );
+
+        return a +
+          b *
+          cos(
+            TAU *
+            (
+              c * t +
+              d
+            )
+          );
+      }
+
+
+
+      /* ----------------------------------------------------------
+         MAIN
+      ---------------------------------------------------------- */
+
+      void main() {
+
+        vec2 resolution =
+          u_resolution;
+
+        vec2 uv =
+          (
+            gl_FragCoord.xy -
+            0.5 * resolution
+          ) /
+          resolution.y;
+
+
+        /*
+          Pointer converted into the same aspect-correct coordinate
+          system as the canvas.
+        */
+
+        vec2 pointer =
+          (
+            u_pointer -
+            0.5 * resolution
+          ) /
+          resolution.y;
+
+
+        float scroll =
+          u_scroll;
+
+
+        /*
+          Scroll changes the "camera" through the generative space.
+        */
+
+        float scene =
+          scroll * 4.0;
+
+        float scrollCurve =
+          smoothstep(
+            0.0,
+            1.0,
+            scroll
+          );
+
+
+        /*
+          Slowly rotate the entire mathematical field.
+        */
+
+        float globalRotation =
+          0.08 *
+          sin(
+            u_time * 0.12
+          ) +
+          scroll * 0.55;
+
+        uv =
+          rotate2D(
+            globalRotation
+          ) *
+          uv;
+
+
+
+        /* --------------------------------------------------------
+           POINTER GRAVITY
+        -------------------------------------------------------- */
+
+        vec2 delta =
+          uv - pointer;
+
+        float distanceToPointer =
+          length(delta);
+
+        float velocityMagnitude =
+          length(u_velocity);
+
+
+        float pointerField =
+          exp(
+            -distanceToPointer *
+            distanceToPointer *
+            7.5
+          ) *
+          u_presence;
+
+
+        /*
+          Moving quickly produces more distortion.
+          Holding creates a stronger local lens.
+        */
+
+        float distortionStrength =
+          pointerField *
+          (
+            0.20 +
+            min(
+              velocityMagnitude *
+              0.55,
+              1.0
+            )
+          );
+
+
+        distortionStrength +=
+          pointerField *
+          u_down *
+          0.55;
+
+
+        float safeDistance =
+          max(
+            distanceToPointer,
+            0.03
+          );
+
+
+        /*
+          Rotational gravitational lens.
+        */
+
+        float lensRotation =
+          distortionStrength *
+          2.2;
+
+
+        delta =
+          rotate2D(
+            lensRotation
+          ) *
+          delta;
+
+
+        /*
+          Tiny inward attraction.
+        */
+
+        delta *=
+          1.0 -
+          (
+            pointerField *
+            u_down *
+            0.18
+          );
+
+
+        uv =
+          pointer +
+          delta;
+
+
+
+        /* --------------------------------------------------------
+           CLICK / TAP SHOCKWAVE
+        -------------------------------------------------------- */
+
+        float pulseAge =
+          u_pulse;
+
+
+        float ringRadius =
+          pulseAge *
+          0.72;
+
+
+        float shockwave =
+          exp(
+            -85.0 *
+            pow(
+              distanceToPointer -
+              ringRadius,
+              2.0
+            )
+          );
+
+
+        shockwave *=
+          exp(
+            -pulseAge * 1.45
+          );
+
+
+        if (
+          pulseAge > 2.5
+        ) {
+          shockwave = 0.0;
+        }
+
+
+        vec2 radialDirection =
+          normalize(
+            delta +
+            0.0001
+          );
+
+
+        uv +=
+          radialDirection *
+          shockwave *
+          0.055;
+
+
+
+        /* --------------------------------------------------------
+           DOMAIN WARP
+        -------------------------------------------------------- */
+
+        float time =
+          u_time * 0.085;
+
+
+        float scale =
+          mix(
+            1.65,
+            2.55,
+            0.5 +
+            0.5 *
+            sin(
+              scene * 1.4
+            )
+          );
+
+
+        vec2 p =
+          uv * scale;
+
+
+        p += vec2(
+          u_seed * 0.031,
+          u_seed * 0.047
+        );
+
+
+        vec2 q;
+
+        q.x =
+          fbm(
+            p +
+            vec2(
+              time,
+              -time * 0.63
+            )
+          );
+
+        q.y =
+          fbm(
+            p +
+            vec2(
+              5.2,
+              1.3
+            ) -
+            vec2(
+              time * 0.48,
+              time * 0.29
+            )
+          );
+
+
+        vec2 r;
+
+        r.x =
+          fbm(
+            p +
+            3.5 * q +
+            vec2(
+              1.7,
+              9.2
+            ) +
+            time * 0.31
+          );
+
+        r.y =
+          fbm(
+            p +
+            3.5 * q +
+            vec2(
+              8.3,
+              2.8
+            ) -
+            time * 0.27
+          );
+
+
+        vec2 s;
+
+        s.x =
+          fbm(
+            p +
+            4.0 * r +
+            vec2(
+              2.1,
+              5.8
+            )
+          );
+
+        s.y =
+          fbm(
+            p +
+            4.0 * r +
+            vec2(
+              7.3,
+              1.9
+            )
+          );
+
+
+        float field =
+          fbm(
+            p +
+            3.25 * r +
+            1.6 * s
+          );
+
+
+
+        /* --------------------------------------------------------
+           FILAMENT STRUCTURE
+        -------------------------------------------------------- */
+
+        float filamentA =
+          abs(
+            sin(
+              (
+                field +
+                r.x * 0.7 -
+                r.y * 0.45 +
+                scroll * 0.7
+              ) *
+              TAU *
+              1.3
+            )
+          );
+
+
+        filamentA =
+          pow(
+            1.0 - filamentA,
+            5.5
+          );
+
+
+        float filamentB =
+          abs(
+            sin(
+              (
+                field * 1.4 +
+                s.x -
+                s.y +
+                time * 0.25
+              ) *
+              TAU
+            )
+          );
+
+
+        filamentB =
+          pow(
+            1.0 - filamentB,
+            8.0
+          );
+
+
+        float filaments =
+          filamentA +
+          filamentB * 0.55;
+
+
+
+        /* --------------------------------------------------------
+           MICROSTRUCTURE / PARTICULATE LIGHT
+        -------------------------------------------------------- */
+
+        vec2 starGrid =
+          floor(
+            (
+              gl_FragCoord.xy /
+              resolution.y
+            ) *
+            165.0
+          );
+
+
+        float starRandom =
+          hash21(
+            starGrid +
+            floor(
+              u_time * 0.08
+            )
+          );
+
+
+        float stars =
+          smoothstep(
+            0.9965,
+            1.0,
+            starRandom
+          );
+
+
+        stars *=
+          0.16 +
+          0.3 *
+          field;
+
+
+
+        /* --------------------------------------------------------
+           COLOR
+        -------------------------------------------------------- */
+
+        float phase =
+          0.5 +
+          0.5 *
+          sin(
+            scroll *
+            TAU
+          );
+
+
+        vec3 iridescence =
+          palette(
+            field * 0.92 +
+            r.x * 0.55 +
+            filaments * 0.11 +
+            time * 0.04,
+            phase
+          );
+
+
+        /*
+          Deep background.
+        */
+
+        vec3 backgroundA =
+          vec3(
+            0.008,
+            0.011,
+            0.020
+          );
+
+
+        vec3 backgroundB =
+          vec3(
+            0.025,
+            0.030,
+            0.060
+          );
+
+
+        vec3 color =
+          mix(
+            backgroundA,
+            backgroundB,
+            field
+          );
+
+
+        /*
+          Main luminous material.
+        */
+
+        float light =
+          smoothstep(
+            0.16,
+            0.94,
+            field
+          );
+
+
+        color +=
+          iridescence *
+          light *
+          0.78;
+
+
+        /*
+          Filaments appear almost electrically thin.
+        */
+
+        color +=
+          iridescence *
+          filaments *
+          0.72;
+
+
+        /*
+          Pointer creates local pearlescent light.
+        */
+
+        vec3 pointerColor =
+          palette(
+            time * 0.25 +
+            scroll +
+            0.1,
+            0.35
+          );
+
+
+        color +=
+          pointerColor *
+          pointerField *
+          0.24;
+
+
+        /*
+          Shockwave catches the light.
+        */
+
+        color +=
+          pointerColor *
+          shockwave *
+          0.65;
+
+
+        /*
+          Sparse microscopic sparkles.
+        */
+
+        color +=
+          vec3(
+            0.78,
+            0.88,
+            1.0
+          ) *
+          stars;
+
+
+
+        /* --------------------------------------------------------
+           SCROLL DEPTH TRANSFORMATION
+        -------------------------------------------------------- */
+
+        float depthPulse =
+          0.93 +
+          0.07 *
+          sin(
+            scene * PI +
+            field * 3.0
+          );
+
+
+        color *=
+          depthPulse;
+
+
+
+        /* --------------------------------------------------------
+           VIGNETTE
+        -------------------------------------------------------- */
+
+        vec2 vignetteUV =
+          gl_FragCoord.xy /
+          resolution;
+
+
+        float vignette =
+          vignetteUV.x *
+          vignetteUV.y *
+          (
+            1.0 - vignetteUV.x
+          ) *
+          (
+            1.0 - vignetteUV.y
+          );
+
+
+        vignette =
+          pow(
+            vignette * 16.0,
+            0.16
+          );
+
+
+        color *=
+          0.54 +
+          0.46 *
+          vignette;
+
+
+
+        /* --------------------------------------------------------
+           FILM GRAIN
+        -------------------------------------------------------- */
+
+        float grain =
+          hash21(
+            gl_FragCoord.xy +
+            fract(u_time) *
+            743.17
+          );
+
+
+        color +=
+          (
+            grain - 0.5
+          ) *
+          0.025;
+
+
+
+        /* --------------------------------------------------------
+           TONEMAPPING
+        -------------------------------------------------------- */
+
+        color =
+          color /
+          (
+            color + 0.72
+          );
+
+
+        color =
+          pow(
+            color,
+            vec3(0.9)
+          );
+
+
+        outColor =
+          vec4(
+            color,
+            1.0
+          );
+      }
+    `;
+
+
+
+    /* ============================================================
+       WEBGL BOILERPLATE
+    ============================================================ */
+
+    function compileShader(type, source) {
+
+      const shader =
+        gl.createShader(type);
+
+      gl.shaderSource(
+        shader,
+        source
+      );
+
+      gl.compileShader(shader);
+
+      if (
+        !gl.getShaderParameter(
+          shader,
+          gl.COMPILE_STATUS
+        )
+      ) {
+
+        console.error(
+          gl.getShaderInfoLog(shader)
+        );
+
+        throw new Error(
+          "Shader compilation failed"
+        );
+      }
+
+      return shader;
     }
 
-    function lerpColor(a, b, amount) {
-      return [
-        Math.round(lerp(a[0], b[0], amount)),
-        Math.round(lerp(a[1], b[1], amount)),
-        Math.round(lerp(a[2], b[2], amount))
-      ];
+
+    const vertexShader =
+      compileShader(
+        gl.VERTEX_SHADER,
+        vertexShaderSource
+      );
+
+
+    const fragmentShader =
+      compileShader(
+        gl.FRAGMENT_SHADER,
+        fragmentShaderSource
+      );
+
+
+    const program =
+      gl.createProgram();
+
+
+    gl.attachShader(
+      program,
+      vertexShader
+    );
+
+
+    gl.attachShader(
+      program,
+      fragmentShader
+    );
+
+
+    gl.linkProgram(program);
+
+
+    if (
+      !gl.getProgramParameter(
+        program,
+        gl.LINK_STATUS
+      )
+    ) {
+
+      console.error(
+        gl.getProgramInfoLog(program)
+      );
+
+      throw new Error(
+        "Program linking failed"
+      );
     }
 
-    function rgb(color) {
-      return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-    }
+
+    gl.useProgram(program);
 
 
-    /* =========================================================
-       POINTER / TOUCH LIGHT
-    ========================================================= */
 
-    let pointer = {
-      targetX: width / 2,
-      targetY: height / 2,
+    /* ============================================================
+       FULL-SCREEN TRIANGLE
+    ============================================================ */
 
-      x: width / 2,
-      y: height / 2,
+    const vertices =
+      new Float32Array([
+        -1, -1,
+         3, -1,
+        -1,  3
+      ]);
 
-      active: false,
 
-      lastMove: performance.now(),
+    const buffer =
+      gl.createBuffer();
 
-      idleStart: performance.now()
+
+    gl.bindBuffer(
+      gl.ARRAY_BUFFER,
+      buffer
+    );
+
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      vertices,
+      gl.STATIC_DRAW
+    );
+
+
+    const positionLocation =
+      gl.getAttribLocation(
+        program,
+        "a_position"
+      );
+
+
+    gl.enableVertexAttribArray(
+      positionLocation
+    );
+
+
+    gl.vertexAttribPointer(
+      positionLocation,
+      2,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+
+
+    /* ============================================================
+       UNIFORMS
+    ============================================================ */
+
+    const uniforms = {
+
+      resolution:
+        gl.getUniformLocation(
+          program,
+          "u_resolution"
+        ),
+
+      time:
+        gl.getUniformLocation(
+          program,
+          "u_time"
+        ),
+
+      scroll:
+        gl.getUniformLocation(
+          program,
+          "u_scroll"
+        ),
+
+      pointer:
+        gl.getUniformLocation(
+          program,
+          "u_pointer"
+        ),
+
+      velocity:
+        gl.getUniformLocation(
+          program,
+          "u_velocity"
+        ),
+
+      presence:
+        gl.getUniformLocation(
+          program,
+          "u_presence"
+        ),
+
+      down:
+        gl.getUniformLocation(
+          program,
+          "u_down"
+        ),
+
+      pulse:
+        gl.getUniformLocation(
+          program,
+          "u_pulse"
+        ),
+
+      seed:
+        gl.getUniformLocation(
+          program,
+          "u_seed"
+        )
     };
 
 
-    function activatePointer(x, y) {
 
-      pointer.targetX = x;
-      pointer.targetY = y;
+    /* ============================================================
+       STATE
+    ============================================================ */
 
-      pointer.active = true;
+    let dpr = 1;
 
-      pointer.lastMove = performance.now();
 
-    }
+    let pointer = {
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2
+    };
 
 
-    interaction.addEventListener("pointermove", event => {
+    let targetPointer = {
+      ...pointer
+    };
 
-      activatePointer(
-        event.clientX,
-        event.clientY
-      );
 
-    });
+    let previousPointer = {
+      ...pointer
+    };
 
 
-    interaction.addEventListener("pointerdown", event => {
+    let velocity = {
+      x: 0,
+      y: 0
+    };
 
-      activatePointer(
-        event.clientX,
-        event.clientY
-      );
 
-      createRipple(
-        event.clientX,
-        event.clientY
-      );
+    let smoothVelocity = {
+      x: 0,
+      y: 0
+    };
 
-    });
 
+    let pointerPresence = 0;
+    let targetPresence = 0;
 
-    interaction.addEventListener("pointerup", event => {
 
-      if (event.pointerType === "touch") {
+    let pointerDown = 0;
+    let targetPointerDown = 0;
 
-        pointer.active = false;
-        pointer.idleStart = performance.now();
 
-      }
+    let lastInteraction =
+      performance.now();
 
-    });
 
+    let pulseStartedAt =
+      -10000;
 
-    interaction.addEventListener("pointercancel", () => {
 
-      pointer.active = false;
-      pointer.idleStart = performance.now();
+    let currentScroll = 0;
+    let targetScroll = 0;
 
-    });
 
+    const seed =
+      Math.random() * 1000;
 
-    interaction.addEventListener("pointerleave", event => {
 
-      if (event.pointerType === "mouse") {
 
-        pointer.active = false;
-        pointer.idleStart = performance.now();
+    /* ============================================================
+       RESPONSIVE CANVAS
+    ============================================================ */
 
-      }
+    function resize() {
 
-    });
+      /*
+        Capping DPR at 2 keeps phones and Retina Macs
+        smooth while still looking extremely sharp.
+      */
 
-
-    /* =========================================================
-       RIPPLE SYSTEM
-    ========================================================= */
-
-    const ripples = [];
-
-
-    function createRipple(x, y) {
-
-      ripples.push({
-
-        x,
-        y,
-
-        radius: 4,
-
-        opacity: 0.52,
-
-        speed: 3 + Math.random() * 1.5,
-
-        width: 1 + Math.random() * 1.2
-
-      });
-
-
-      // Tiny second ripple gives it more of a liquid feel.
-
-      setTimeout(() => {
-
-        ripples.push({
-
-          x,
-          y,
-
-          radius: 2,
-
-          opacity: 0.18,
-
-          speed: 2.2,
-
-          width: 0.8
-
-        });
-
-      }, 90);
-
-    }
-
-
-    function drawRipples() {
-
-      ctx.clearRect(
-        0,
-        0,
-        width,
-        height
-      );
-
-
-      for (let i = ripples.length - 1; i >= 0; i--) {
-
-        const ripple = ripples[i];
-
-        ripple.radius += ripple.speed;
-
-        ripple.speed *= 0.993;
-
-        ripple.opacity *= 0.974;
-
-
-        ctx.beginPath();
-
-        ctx.arc(
-          ripple.x,
-          ripple.y,
-          ripple.radius,
-          0,
-          Math.PI * 2
+      dpr =
+        Math.min(
+          window.devicePixelRatio || 1,
+          2
         );
 
-        ctx.strokeStyle =
-          `rgba(255,255,255,${ripple.opacity})`;
 
-        ctx.lineWidth = ripple.width;
+      const width =
+        Math.floor(
+          window.innerWidth * dpr
+        );
 
-        ctx.stroke();
+
+      const height =
+        Math.floor(
+          window.innerHeight * dpr
+        );
 
 
-        if (ripple.opacity < 0.008) {
+      if (
+        canvas.width !== width ||
+        canvas.height !== height
+      ) {
 
-          ripples.splice(i, 1);
+        canvas.width = width;
+        canvas.height = height;
 
-        }
 
+        gl.viewport(
+          0,
+          0,
+          width,
+          height
+        );
       }
-
     }
-
-
-    /* =========================================================
-       CANVAS RESIZE
-    ========================================================= */
-
-    function resizeCanvas() {
-
-      width = window.innerWidth;
-      height = window.innerHeight;
-
-      dpr = Math.min(
-        window.devicePixelRatio || 1,
-        2
-      );
-
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-
-      canvas.style.width = width + "px";
-      canvas.style.height = height + "px";
-
-      ctx.setTransform(
-        dpr,
-        0,
-        0,
-        dpr,
-        0,
-        0
-      );
-
-    }
-
-
-    resizeCanvas();
 
 
     window.addEventListener(
       "resize",
-      resizeCanvas
+      resize
     );
 
 
-    /* =========================================================
-       FIELD MOTION CONFIGURATION
-    ========================================================= */
-
-    const fieldMotion = [
-
-      {
-        radiusX: 0.42,
-        radiusY: 0.25,
-        speed: 0.000080,
-        phase: 0.2
-      },
-
-      {
-        radiusX: 0.34,
-        radiusY: 0.38,
-        speed: 0.000063,
-        phase: 1.7
-      },
-
-      {
-        radiusX: 0.46,
-        radiusY: 0.30,
-        speed: 0.000051,
-        phase: 3.1
-      },
-
-      {
-        radiusX: 0.28,
-        radiusY: 0.42,
-        speed: 0.000094,
-        phase: 4.4
-      },
-
-      {
-        radiusX: 0.39,
-        radiusY: 0.34,
-        speed: 0.000058,
-        phase: 5.6
-      },
-
-      {
-        radiusX: 0.25,
-        radiusY: 0.25,
-        speed: 0.000108,
-        phase: 2.5
-      }
-
-    ];
+    resize();
 
 
-    /* =========================================================
-       SCROLL / PALETTE
-    ========================================================= */
 
-    function getScrollState() {
+    /* ============================================================
+       POINTER INTERACTION
+    ============================================================ */
 
-      const maxScroll =
-        document.documentElement.scrollHeight -
-        window.innerHeight;
+    function updateTargetPointer(
+      clientX,
+      clientY
+    ) {
 
-      const progress =
-        maxScroll > 0
-          ? window.scrollY / maxScroll
-          : 0;
+      targetPointer.x =
+        clientX;
 
-
-      const scaled =
-        progress * (palettes.length - 1);
+      targetPointer.y =
+        clientY;
 
 
-      const index =
-        Math.min(
-          Math.floor(scaled),
-          palettes.length - 2
-        );
-
-
-      const mix =
-        scaled - index;
-
-
-      return {
-        index,
-        mix,
-        progress
-      };
-
-    }
-
-
-    /* =========================================================
-       MAIN ANIMATION
-    ========================================================= */
-
-    function animate(time) {
-
-      const scroll =
-        getScrollState();
-
-
-      /* -------------------------------
-         COLORS
-      -------------------------------- */
-
-      const paletteA =
-        palettes[scroll.index];
-
-      const paletteB =
-        palettes[scroll.index + 1];
-
-
-      const background =
-        lerpColor(
-          paletteA.bg,
-          paletteB.bg,
-          scroll.mix
-        );
-
-
-      document.documentElement.style.setProperty(
-        "--bg",
-        rgb(background)
-      );
-
-
-      fields.forEach((field, i) => {
-
-        const color =
-          lerpColor(
-            paletteA.colors[i],
-            paletteB.colors[i],
-            scroll.mix
-          );
-
-        field.style.background =
-          `radial-gradient(
-            circle,
-            rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.96) 0%,
-            rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.72) 28%,
-            rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.00) 70%
-          )`;
-
-      });
-
-
-      /* -------------------------------
-         POINTER IDLE LOGIC
-      -------------------------------- */
-
-      const now =
+      lastInteraction =
         performance.now();
 
 
-      if (
-        pointer.active &&
-        now - pointer.lastMove > 900
-      ) {
-
-        pointer.active = false;
-
-        pointer.idleStart = now;
-
-      }
-
-
-      if (!pointer.active) {
-
-        const idleDuration =
-          now - pointer.idleStart;
-
-
-        /*
-          First, the light returns toward center.
-
-          After it settles, it begins an extremely
-          slow autonomous drift.
-        */
-
-        if (idleDuration < 2600) {
-
-          pointer.targetX =
-            width * 0.5;
-
-          pointer.targetY =
-            height * 0.5;
-
-        }
-
-        else {
-
-          pointer.targetX =
-            width * (
-              0.5 +
-              Math.sin(time * 0.00012) * 0.07
-            );
-
-          pointer.targetY =
-            height * (
-              0.5 +
-              Math.cos(time * 0.000095) * 0.055
-            );
-
-        }
-
-      }
-
-
-      /* -------------------------------
-         POINTER INERTIA
-      -------------------------------- */
-
-      const pointerSpeed =
-        pointer.active
-          ? 0.145
-          : 0.035;
-
-
-      pointer.x +=
-        (pointer.targetX - pointer.x) *
-        pointerSpeed;
-
-      pointer.y +=
-        (pointer.targetY - pointer.y) *
-        pointerSpeed;
-
-
-      light.style.left =
-        pointer.x + "px";
-
-      light.style.top =
-        pointer.y + "px";
-
-
-      /* -------------------------------
-         NORMALIZED POINTER INFLUENCE
-      -------------------------------- */
-
-      const influenceX =
-        (pointer.x / width - 0.5);
-
-      const influenceY =
-        (pointer.y / height - 0.5);
-
-
-      /* -------------------------------
-         COLOR FIELD MOTION
-      -------------------------------- */
-
-      fields.forEach((field, i) => {
-
-        const config =
-          fieldMotion[i];
-
-
-        let motionX =
-          Math.sin(
-            time * config.speed +
-            config.phase
-          );
-
-        let motionY =
-          Math.cos(
-            time *
-            config.speed *
-            0.83 +
-            config.phase
-          );
-
-
-        /*
-          Pointer subtly bends the whole field.
-          Each layer responds differently.
-        */
-
-        const response =
-          ((i % 3) + 1) * 0.026;
-
-
-        const x =
-          motionX *
-          width *
-          config.radiusX +
-
-          influenceX *
-          width *
-          response;
-
-
-        const y =
-          motionY *
-          height *
-          config.radiusY +
-
-          influenceY *
-          height *
-          response;
-
-
-        /*
-          Scrolling also slightly changes the
-          geometry, not only the colors.
-        */
-
-        const scrollShift =
-          Math.sin(
-            scroll.progress *
-            Math.PI *
-            3 +
-            i
-          ) *
-          50;
-
-
-        const scale =
-          1 +
-          Math.sin(
-            time * config.speed * 0.5 +
-            config.phase
-          ) *
-          0.08;
-
-
-        field.style.transform =
-          `
-            translate(
-              calc(-50% + ${x}px),
-              calc(-50% + ${y + scrollShift}px)
-            )
-            scale(${scale})
-          `;
-
-      });
-
-
-      /* -------------------------------
-         RIPPLES
-      -------------------------------- */
-
-      drawRipples();
-
-
-      requestAnimationFrame(animate);
-
+      targetPresence = 1;
     }
 
 
-    requestAnimationFrame(animate);
 
+    window.addEventListener(
+      "pointermove",
+      (event) => {
+
+        updateTargetPointer(
+          event.clientX,
+          event.clientY
+        );
+      },
+      {
+        passive: true
+      }
+    );
+
+
+
+    window.addEventListener(
+      "pointerdown",
+      (event) => {
+
+        updateTargetPointer(
+          event.clientX,
+          event.clientY
+        );
+
+
+        targetPointerDown = 1;
+
+
+        pulseStartedAt =
+          performance.now();
+      },
+      {
+        passive: true
+      }
+    );
+
+
+
+    window.addEventListener(
+      "pointerup",
+      () => {
+
+        targetPointerDown = 0;
+      },
+      {
+        passive: true
+      }
+    );
+
+
+
+    window.addEventListener(
+      "pointercancel",
+      () => {
+
+        targetPointerDown = 0;
+      },
+      {
+        passive: true
+      }
+    );
+
+
+
+    window.addEventListener(
+      "blur",
+      () => {
+
+        targetPointerDown = 0;
+        targetPresence = 0;
+      }
+    );
+
+
+
+    /* ============================================================
+       SCROLL
+    ============================================================ */
+
+    function updateScroll() {
+
+      const maximum =
+        document.documentElement.scrollHeight -
+        window.innerHeight;
+
+
+      targetScroll =
+        maximum > 0
+          ? window.scrollY / maximum
+          : 0;
+
+
+      targetScroll =
+        Math.max(
+          0,
+          Math.min(
+            1,
+            targetScroll
+          )
+        );
+    }
+
+
+    window.addEventListener(
+      "scroll",
+      updateScroll,
+      {
+        passive: true
+      }
+    );
+
+
+    updateScroll();
+
+
+
+    /* ============================================================
+       RENDER LOOP
+    ============================================================ */
+
+    const startedAt =
+      performance.now();
+
+
+    function render(now) {
+
+      resize();
+
+
+      const elapsed =
+        (now - startedAt) /
+        1000;
+
+
+      /*
+        If nobody has interacted for a while, the "lens"
+        becomes autonomous and begins slowly wandering.
+
+        The moment the user returns, control immediately
+        transfers back to them.
+      */
+
+      const idleTime =
+        now -
+        lastInteraction;
+
+
+      if (
+        idleTime >
+        1800
+      ) {
+
+        targetPresence =
+          0.62;
+
+
+        targetPointer.x =
+          window.innerWidth *
+          (
+            0.5 +
+            0.18 *
+            sin(
+              elapsed * 0.19
+            )
+          );
+
+
+        targetPointer.y =
+          window.innerHeight *
+          (
+            0.5 +
+            0.14 *
+            sin(
+              elapsed * 0.13 +
+              1.7
+            )
+          );
+      }
+
+
+
+      /*
+        Smooth pointer movement.
+
+        User interaction is deliberately faster than
+        autonomous movement.
+      */
+
+      const followSpeed =
+        idleTime < 1800
+          ? 0.16
+          : 0.018;
+
+
+      pointer.x +=
+        (
+          targetPointer.x -
+          pointer.x
+        ) *
+        followSpeed;
+
+
+      pointer.y +=
+        (
+          targetPointer.y -
+          pointer.y
+        ) *
+        followSpeed;
+
+
+
+      /*
+        Pointer velocity creates more turbulence.
+      */
+
+      velocity.x =
+        pointer.x -
+        previousPointer.x;
+
+
+      velocity.y =
+        pointer.y -
+        previousPointer.y;
+
+
+      smoothVelocity.x +=
+        (
+          velocity.x -
+          smoothVelocity.x
+        ) *
+        0.18;
+
+
+      smoothVelocity.y +=
+        (
+          velocity.y -
+          smoothVelocity.y
+        ) *
+        0.18;
+
+
+      previousPointer.x =
+        pointer.x;
+
+
+      previousPointer.y =
+        pointer.y;
+
+
+
+      /*
+        Ease interaction states.
+      */
+
+      pointerPresence +=
+        (
+          targetPresence -
+          pointerPresence
+        ) *
+        0.045;
+
+
+      pointerDown +=
+        (
+          targetPointerDown -
+          pointerDown
+        ) *
+        0.10;
+
+
+      currentScroll +=
+        (
+          targetScroll -
+          currentScroll
+        ) *
+        0.055;
+
+
+
+      /*
+        Scroll indicator.
+      */
+
+      progress.style.setProperty(
+        "--scroll",
+        currentScroll
+      );
+
+
+
+      /*
+        Pulse age.
+      */
+
+      const pulseAge =
+        (
+          now -
+          pulseStartedAt
+        ) /
+        1000;
+
+
+
+      /*
+        Send uniforms to GPU.
+      */
+
+      gl.uniform2f(
+        uniforms.resolution,
+        canvas.width,
+        canvas.height
+      );
+
+
+      gl.uniform1f(
+        uniforms.time,
+        elapsed
+      );
+
+
+      gl.uniform1f(
+        uniforms.scroll,
+        currentScroll
+      );
+
+
+      /*
+        WebGL's vertical coordinates run upward,
+        browser pointer coordinates run downward.
+      */
+
+      gl.uniform2f(
+        uniforms.pointer,
+        pointer.x * dpr,
+        (
+          window.innerHeight -
+          pointer.y
+        ) * dpr
+      );
+
+
+      gl.uniform2f(
+        uniforms.velocity,
+        smoothVelocity.x /
+          window.innerWidth,
+
+        -smoothVelocity.y /
+          window.innerHeight
+      );
+
+
+      gl.uniform1f(
+        uniforms.presence,
+        pointerPresence
+      );
+
+
+      gl.uniform1f(
+        uniforms.down,
+        pointerDown
+      );
+
+
+      gl.uniform1f(
+        uniforms.pulse,
+        pulseAge
+      );
+
+
+      gl.uniform1f(
+        uniforms.seed,
+        seed
+      );
+
+
+      gl.drawArrays(
+        gl.TRIANGLES,
+        0,
+        3
+      );
+
+
+      requestAnimationFrame(
+        render
+      );
+    }
+
+
+    requestAnimationFrame(
+      render
+    );
   </script>
 
 </body>
