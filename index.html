@@ -1,4 +1,102 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+    }
+
+    body {
+      position: relative;
+    }
+
+    .gradient {
+      position: absolute;
+      inset: -30%;
+      width: 160%;
+      height: 160%;
+
+      background:
+        radial-gradient(
+          circle at var(--x, 50%) var(--y, 50%),
+          rgba(255, 220, 190, 0.95),
+          transparent 28%
+        ),
+        radial-gradient(
+          circle at 25% 30%,
+          rgba(195, 210, 255, 0.9),
+          transparent 35%
+        ),
+        radial-gradient(
+          circle at 75% 65%,
+          rgba(235, 190, 220, 0.9),
+          transparent 38%
+        ),
+        radial-gradient(
+          circle at 50% 80%,
+          rgba(180, 225, 215, 0.8),
+          transparent 40%
+        ),
+        #ebe7e2;
+
+      filter: blur(35px);
+      animation: drift 18s ease-in-out infinite alternate;
+      transform: scale(1.1);
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.05;
+
+      background-image: url(
+        "data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E"
+      );
+    }
+
+    @keyframes drift {
+      0% {
+        transform: scale(1.1) translate(-2%, -2%) rotate(0deg);
+      }
+
+      50% {
+        transform: scale(1.18) translate(3%, 1%) rotate(3deg);
+      }
+
+      100% {
+        transform: scale(1.12) translate(-1%, 4%) rotate(-2deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gradient {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="gradient" id="gradient"></div>
+  <div class="grain"></div>
+
+  <script>
   const gradient = document.getElementById("gradient");
 
   let targetX = 50;
@@ -106,3 +204,6 @@
 
   animate();
 </script>
+
+</body>
+</html>
