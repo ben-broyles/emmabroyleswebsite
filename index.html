@@ -2,12 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
-
-  <title>emmabroyles.com</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title></title>
 
   <style>
     * {
@@ -16,98 +12,84 @@
       box-sizing: border-box;
     }
 
-    html {
-      background: #05060a;
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
     }
 
     body {
-      width: 100%;
-      height: 600vh;
-
-      background: #05060a;
-
-      overscroll-behavior: none;
+      position: relative;
+      touch-action: none;
     }
 
-    canvas {
-      position: fixed;
-      inset: 0;
-
-      width: 100%;
-      height: 100%;
-
-      display: block;
-
-      background: #05060a;
-    }
-
-    /* Extremely subtle scroll-position indicator */
-    .progress {
-      position: fixed;
-
-      right: 18px;
-      top: 50%;
-
-      width: 1px;
-      height: 72px;
-
-      transform: translateY(-50%);
-
-      background: rgba(255, 255, 255, 0.08);
-
-      z-index: 10;
-
-      pointer-events: none;
-    }
-
-    .progress::after {
-      content: "";
-
+    .gradient {
       position: absolute;
+      inset: -30%;
+      width: 160%;
+      height: 160%;
 
-      top: 0;
-      left: -1px;
+      background:
+        radial-gradient(
+          circle at var(--x, 50%) var(--y, 50%),
+          rgba(255, 220, 190, 0.95),
+          transparent 28%
+        ),
+        radial-gradient(
+          circle at 25% 30%,
+          rgba(195, 210, 255, 0.9),
+          transparent 35%
+        ),
+        radial-gradient(
+          circle at 75% 65%,
+          rgba(235, 190, 220, 0.9),
+          transparent 38%
+        ),
+        radial-gradient(
+          circle at 50% 80%,
+          rgba(180, 225, 215, 0.8),
+          transparent 40%
+        ),
+        #ebe7e2;
 
-      width: 3px;
-      height: 12px;
+      filter: blur(35px);
 
-      border-radius: 100px;
+      animation: drift 18s ease-in-out infinite alternate;
 
-      background: rgba(255, 255, 255, 0.5);
-
-      transform: translateY(
-        calc(var(--scroll, 0) * 60px)
-      );
-
-      transition: transform 0.08s linear;
+      transform: scale(1.1);
+      will-change: transform;
     }
 
-    @media (max-width: 700px) {
-      .progress {
-        right: 10px;
+    .grain {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.05;
 
-        height: 54px;
+      background-image: url(
+        "data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E"
+      );
+    }
 
-        opacity: 0.55;
+    @keyframes drift {
+      0% {
+        transform: scale(1.1) translate(-2%, -2%) rotate(0deg);
       }
 
-      .progress::after {
-        height: 9px;
+      50% {
+        transform: scale(1.18) translate(3%, 1%) rotate(3deg);
+      }
 
-        transform: translateY(
-          calc(var(--scroll, 0) * 45px)
-        );
+      100% {
+        transform: scale(1.12) translate(-1%, 4%) rotate(-2deg);
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      body {
-        height: 100vh;
-        overflow: hidden;
-      }
-
-      .progress {
-        display: none;
+      .gradient {
+        animation: none;
       }
     }
   </style>
@@ -115,1584 +97,152 @@
 
 <body>
 
-  <canvas
-    id="canvas"
-    aria-label="Interactive generative artwork"
-  ></canvas>
-
-  <div class="progress" id="progress"></div>
-
+  <div class="gradient" id="gradient"></div>
+  <div class="grain"></div>
 
   <script>
-    const canvas = document.getElementById("canvas");
-    const progress = document.getElementById("progress");
+    const gradient = document.getElementById("gradient");
 
-    const gl = canvas.getContext("webgl2", {
-      antialias: false,
-      alpha: false,
-      powerPreference: "high-performance"
+    let currentX = 50;
+    let currentY = 50;
+
+    let targetX = 50;
+    let targetY = 50;
+
+    let inactivityTimer = null;
+    let isInteracting = false;
+
+    // How long the cursor/finger can stay still
+    // before the glow begins drifting back to center.
+    const idleDelay = 1200;
+
+    // How quickly the glow catches up while interacting.
+    const followSpeed = 0.16;
+
+    // How gently it returns to center.
+    const returnSpeed = 0.045;
+
+    function returnToCenter() {
+      isInteracting = false;
+      targetX = 50;
+      targetY = 50;
+    }
+
+    function restartIdleTimer(delay = idleDelay) {
+      clearTimeout(inactivityTimer);
+
+      inactivityTimer = setTimeout(() => {
+        returnToCenter();
+      }, delay);
+    }
+
+    function updateTarget(clientX, clientY) {
+      isInteracting = true;
+
+      targetX = (clientX / window.innerWidth) * 100;
+      targetY = (clientY / window.innerHeight) * 100;
+
+      restartIdleTimer();
+    }
+
+    function animate() {
+      const speed = isInteracting
+        ? followSpeed
+        : returnSpeed;
+
+      currentX += (targetX - currentX) * speed;
+      currentY += (targetY - currentY) * speed;
+
+      gradient.style.setProperty(
+        "--x",
+        `${currentX}%`
+      );
+
+      gradient.style.setProperty(
+        "--y",
+        `${currentY}%`
+      );
+
+      requestAnimationFrame(animate);
+    }
+
+    // -------------------------
+    // DESKTOP
+    // -------------------------
+
+    document.addEventListener("mousemove", (event) => {
+      updateTarget(
+        event.clientX,
+        event.clientY
+      );
     });
 
-    if (!gl) {
-      document.body.style.background =
-        "radial-gradient(circle at 50% 45%, #24304a, #08090d 65%, #020305)";
-      throw new Error("WebGL2 is not supported.");
-    }
-
-
-    /* ============================================================
-       VERTEX SHADER
-    ============================================================ */
-
-    const vertexShaderSource = `#version 300 es
-
-      in vec2 a_position;
-
-      void main() {
-        gl_Position = vec4(a_position, 0.0, 1.0);
-      }
-    `;
-
-
-    /* ============================================================
-       FRAGMENT SHADER
-    ============================================================ */
-
-    const fragmentShaderSource = `#version 300 es
-
-      precision highp float;
-
-      uniform vec2 u_resolution;
-
-      uniform float u_time;
-      uniform float u_scroll;
-
-      uniform vec2 u_pointer;
-      uniform vec2 u_velocity;
-
-      uniform float u_presence;
-      uniform float u_down;
-
-      uniform float u_pulse;
-      uniform float u_seed;
-
-      out vec4 outColor;
-
-
-      #define PI 3.14159265359
-      #define TAU 6.28318530718
-
-
-      /* ----------------------------------------------------------
-         RANDOM + NOISE
-      ---------------------------------------------------------- */
-
-      float hash21(vec2 p) {
-
-        p = fract(
-          p * vec2(123.34, 456.21)
-        );
-
-        p += dot(
-          p,
-          p + 45.32
-        );
-
-        return fract(
-          p.x * p.y
-        );
-      }
-
-
-      float noise(vec2 p) {
-
-        vec2 i = floor(p);
-        vec2 f = fract(p);
-
-        f = f * f * (
-          3.0 - 2.0 * f
-        );
-
-        float a = hash21(i);
-        float b = hash21(i + vec2(1.0, 0.0));
-        float c = hash21(i + vec2(0.0, 1.0));
-        float d = hash21(i + vec2(1.0, 1.0));
-
-        return mix(
-          mix(a, b, f.x),
-          mix(c, d, f.x),
-          f.y
-        );
-      }
-
-
-      mat2 rotate2D(float angle) {
-
-        float s = sin(angle);
-        float c = cos(angle);
-
-        return mat2(
-          c, -s,
-          s,  c
-        );
-      }
-
-
-      float fbm(vec2 p) {
-
-        float value = 0.0;
-        float amplitude = 0.5;
-
-        mat2 rotation =
-          rotate2D(0.48);
-
-        for (
-          int i = 0;
-          i < 6;
-          i++
-        ) {
-
-          value +=
-            amplitude *
-            noise(p);
-
-          p =
-            rotation *
-            p *
-            2.03 +
-            17.17;
-
-          amplitude *= 0.5;
-        }
-
-        return value;
-      }
-
-
-
-      /* ----------------------------------------------------------
-         IRIDESCENT COLOR SYSTEM
-      ---------------------------------------------------------- */
-
-      vec3 palette(
-        float t,
-        float phase
-      ) {
-
-        vec3 a =
-          vec3(
-            0.45,
-            0.44,
-            0.50
-          );
-
-        vec3 b =
-          vec3(
-            0.52,
-            0.46,
-            0.50
-          );
-
-        vec3 c =
-          vec3(
-            1.00,
-            0.93,
-            0.82
-          );
-
-        vec3 d =
-          vec3(
-            0.02 + phase * 0.10,
-            0.15 + phase * 0.05,
-            0.33 - phase * 0.07
-          );
-
-        return a +
-          b *
-          cos(
-            TAU *
-            (
-              c * t +
-              d
-            )
-          );
-      }
-
-
-
-      /* ----------------------------------------------------------
-         MAIN
-      ---------------------------------------------------------- */
-
-      void main() {
-
-        vec2 resolution =
-          u_resolution;
-
-        vec2 uv =
-          (
-            gl_FragCoord.xy -
-            0.5 * resolution
-          ) /
-          resolution.y;
-
-
-        /*
-          Pointer converted into the same aspect-correct coordinate
-          system as the canvas.
-        */
-
-        vec2 pointer =
-          (
-            u_pointer -
-            0.5 * resolution
-          ) /
-          resolution.y;
-
-
-        float scroll =
-          u_scroll;
-
-
-        /*
-          Scroll changes the "camera" through the generative space.
-        */
-
-        float scene =
-          scroll * 4.0;
-
-        float scrollCurve =
-          smoothstep(
-            0.0,
-            1.0,
-            scroll
-          );
-
-
-        /*
-          Slowly rotate the entire mathematical field.
-        */
-
-        float globalRotation =
-          0.08 *
-          sin(
-            u_time * 0.12
-          ) +
-          scroll * 0.55;
-
-        uv =
-          rotate2D(
-            globalRotation
-          ) *
-          uv;
-
-
-
-        /* --------------------------------------------------------
-           POINTER GRAVITY
-        -------------------------------------------------------- */
-
-        vec2 delta =
-          uv - pointer;
-
-        float distanceToPointer =
-          length(delta);
-
-        float velocityMagnitude =
-          length(u_velocity);
-
-
-        float pointerField =
-          exp(
-            -distanceToPointer *
-            distanceToPointer *
-            7.5
-          ) *
-          u_presence;
-
-
-        /*
-          Moving quickly produces more distortion.
-          Holding creates a stronger local lens.
-        */
-
-        float distortionStrength =
-          pointerField *
-          (
-            0.20 +
-            min(
-              velocityMagnitude *
-              0.55,
-              1.0
-            )
-          );
-
-
-        distortionStrength +=
-          pointerField *
-          u_down *
-          0.55;
-
-
-        float safeDistance =
-          max(
-            distanceToPointer,
-            0.03
-          );
-
-
-        /*
-          Rotational gravitational lens.
-        */
-
-        float lensRotation =
-          distortionStrength *
-          2.2;
-
-
-        delta =
-          rotate2D(
-            lensRotation
-          ) *
-          delta;
-
-
-        /*
-          Tiny inward attraction.
-        */
-
-        delta *=
-          1.0 -
-          (
-            pointerField *
-            u_down *
-            0.18
-          );
-
-
-        uv =
-          pointer +
-          delta;
-
-
-
-        /* --------------------------------------------------------
-           CLICK / TAP SHOCKWAVE
-        -------------------------------------------------------- */
-
-        float pulseAge =
-          u_pulse;
-
-
-        float ringRadius =
-          pulseAge *
-          0.72;
-
-
-        float shockwave =
-          exp(
-            -85.0 *
-            pow(
-              distanceToPointer -
-              ringRadius,
-              2.0
-            )
-          );
-
-
-        shockwave *=
-          exp(
-            -pulseAge * 1.45
-          );
-
-
-        if (
-          pulseAge > 2.5
-        ) {
-          shockwave = 0.0;
-        }
-
-
-        vec2 radialDirection =
-          normalize(
-            delta +
-            0.0001
-          );
-
-
-        uv +=
-          radialDirection *
-          shockwave *
-          0.055;
-
-
-
-        /* --------------------------------------------------------
-           DOMAIN WARP
-        -------------------------------------------------------- */
-
-        float time =
-          u_time * 0.085;
-
-
-        float scale =
-          mix(
-            1.65,
-            2.55,
-            0.5 +
-            0.5 *
-            sin(
-              scene * 1.4
-            )
-          );
-
-
-        vec2 p =
-          uv * scale;
-
-
-        p += vec2(
-          u_seed * 0.031,
-          u_seed * 0.047
-        );
-
-
-        vec2 q;
-
-        q.x =
-          fbm(
-            p +
-            vec2(
-              time,
-              -time * 0.63
-            )
-          );
-
-        q.y =
-          fbm(
-            p +
-            vec2(
-              5.2,
-              1.3
-            ) -
-            vec2(
-              time * 0.48,
-              time * 0.29
-            )
-          );
-
-
-        vec2 r;
-
-        r.x =
-          fbm(
-            p +
-            3.5 * q +
-            vec2(
-              1.7,
-              9.2
-            ) +
-            time * 0.31
-          );
-
-        r.y =
-          fbm(
-            p +
-            3.5 * q +
-            vec2(
-              8.3,
-              2.8
-            ) -
-            time * 0.27
-          );
-
-
-        vec2 s;
-
-        s.x =
-          fbm(
-            p +
-            4.0 * r +
-            vec2(
-              2.1,
-              5.8
-            )
-          );
-
-        s.y =
-          fbm(
-            p +
-            4.0 * r +
-            vec2(
-              7.3,
-              1.9
-            )
-          );
-
-
-        float field =
-          fbm(
-            p +
-            3.25 * r +
-            1.6 * s
-          );
-
-
-
-        /* --------------------------------------------------------
-           FILAMENT STRUCTURE
-        -------------------------------------------------------- */
-
-        float filamentA =
-          abs(
-            sin(
-              (
-                field +
-                r.x * 0.7 -
-                r.y * 0.45 +
-                scroll * 0.7
-              ) *
-              TAU *
-              1.3
-            )
-          );
-
-
-        filamentA =
-          pow(
-            1.0 - filamentA,
-            5.5
-          );
-
-
-        float filamentB =
-          abs(
-            sin(
-              (
-                field * 1.4 +
-                s.x -
-                s.y +
-                time * 0.25
-              ) *
-              TAU
-            )
-          );
-
-
-        filamentB =
-          pow(
-            1.0 - filamentB,
-            8.0
-          );
-
-
-        float filaments =
-          filamentA +
-          filamentB * 0.55;
-
-
-
-        /* --------------------------------------------------------
-           MICROSTRUCTURE / PARTICULATE LIGHT
-        -------------------------------------------------------- */
-
-        vec2 starGrid =
-          floor(
-            (
-              gl_FragCoord.xy /
-              resolution.y
-            ) *
-            165.0
-          );
-
-
-        float starRandom =
-          hash21(
-            starGrid +
-            floor(
-              u_time * 0.08
-            )
-          );
-
-
-        float stars =
-          smoothstep(
-            0.9965,
-            1.0,
-            starRandom
-          );
-
-
-        stars *=
-          0.16 +
-          0.3 *
-          field;
-
-
-
-        /* --------------------------------------------------------
-           COLOR
-        -------------------------------------------------------- */
-
-        float phase =
-          0.5 +
-          0.5 *
-          sin(
-            scroll *
-            TAU
-          );
-
-
-        vec3 iridescence =
-          palette(
-            field * 0.92 +
-            r.x * 0.55 +
-            filaments * 0.11 +
-            time * 0.04,
-            phase
-          );
-
-
-        /*
-          Deep background.
-        */
-
-        vec3 backgroundA =
-          vec3(
-            0.008,
-            0.011,
-            0.020
-          );
-
-
-        vec3 backgroundB =
-          vec3(
-            0.025,
-            0.030,
-            0.060
-          );
-
-
-        vec3 color =
-          mix(
-            backgroundA,
-            backgroundB,
-            field
-          );
-
-
-        /*
-          Main luminous material.
-        */
-
-        float light =
-          smoothstep(
-            0.16,
-            0.94,
-            field
-          );
-
-
-        color +=
-          iridescence *
-          light *
-          0.78;
-
-
-        /*
-          Filaments appear almost electrically thin.
-        */
-
-        color +=
-          iridescence *
-          filaments *
-          0.72;
-
-
-        /*
-          Pointer creates local pearlescent light.
-        */
-
-        vec3 pointerColor =
-          palette(
-            time * 0.25 +
-            scroll +
-            0.1,
-            0.35
-          );
-
-
-        color +=
-          pointerColor *
-          pointerField *
-          0.24;
-
-
-        /*
-          Shockwave catches the light.
-        */
-
-        color +=
-          pointerColor *
-          shockwave *
-          0.65;
-
-
-        /*
-          Sparse microscopic sparkles.
-        */
-
-        color +=
-          vec3(
-            0.78,
-            0.88,
-            1.0
-          ) *
-          stars;
-
-
-
-        /* --------------------------------------------------------
-           SCROLL DEPTH TRANSFORMATION
-        -------------------------------------------------------- */
-
-        float depthPulse =
-          0.93 +
-          0.07 *
-          sin(
-            scene * PI +
-            field * 3.0
-          );
-
-
-        color *=
-          depthPulse;
-
-
-
-        /* --------------------------------------------------------
-           VIGNETTE
-        -------------------------------------------------------- */
-
-        vec2 vignetteUV =
-          gl_FragCoord.xy /
-          resolution;
-
-
-        float vignette =
-          vignetteUV.x *
-          vignetteUV.y *
-          (
-            1.0 - vignetteUV.x
-          ) *
-          (
-            1.0 - vignetteUV.y
-          );
-
-
-        vignette =
-          pow(
-            vignette * 16.0,
-            0.16
-          );
-
-
-        color *=
-          0.54 +
-          0.46 *
-          vignette;
-
-
-
-        /* --------------------------------------------------------
-           FILM GRAIN
-        -------------------------------------------------------- */
-
-        float grain =
-          hash21(
-            gl_FragCoord.xy +
-            fract(u_time) *
-            743.17
-          );
-
-
-        color +=
-          (
-            grain - 0.5
-          ) *
-          0.025;
-
-
-
-        /* --------------------------------------------------------
-           TONEMAPPING
-        -------------------------------------------------------- */
-
-        color =
-          color /
-          (
-            color + 0.72
-          );
-
-
-        color =
-          pow(
-            color,
-            vec3(0.9)
-          );
-
-
-        outColor =
-          vec4(
-            color,
-            1.0
-          );
-      }
-    `;
-
-
-
-    /* ============================================================
-       WEBGL BOILERPLATE
-    ============================================================ */
-
-    function compileShader(type, source) {
-
-      const shader =
-        gl.createShader(type);
-
-      gl.shaderSource(
-        shader,
-        source
-      );
-
-      gl.compileShader(shader);
-
-      if (
-        !gl.getShaderParameter(
-          shader,
-          gl.COMPILE_STATUS
-        )
-      ) {
-
-        console.error(
-          gl.getShaderInfoLog(shader)
-        );
-
-        throw new Error(
-          "Shader compilation failed"
-        );
-      }
-
-      return shader;
-    }
-
-
-    const vertexShader =
-      compileShader(
-        gl.VERTEX_SHADER,
-        vertexShaderSource
-      );
-
-
-    const fragmentShader =
-      compileShader(
-        gl.FRAGMENT_SHADER,
-        fragmentShaderSource
-      );
-
-
-    const program =
-      gl.createProgram();
-
-
-    gl.attachShader(
-      program,
-      vertexShader
-    );
-
-
-    gl.attachShader(
-      program,
-      fragmentShader
-    );
-
-
-    gl.linkProgram(program);
-
-
-    if (
-      !gl.getProgramParameter(
-        program,
-        gl.LINK_STATUS
-      )
-    ) {
-
-      console.error(
-        gl.getProgramInfoLog(program)
-      );
-
-      throw new Error(
-        "Program linking failed"
-      );
-    }
-
-
-    gl.useProgram(program);
-
-
-
-    /* ============================================================
-       FULL-SCREEN TRIANGLE
-    ============================================================ */
-
-    const vertices =
-      new Float32Array([
-        -1, -1,
-         3, -1,
-        -1,  3
-      ]);
-
-
-    const buffer =
-      gl.createBuffer();
-
-
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      buffer
-    );
-
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      vertices,
-      gl.STATIC_DRAW
-    );
-
-
-    const positionLocation =
-      gl.getAttribLocation(
-        program,
-        "a_position"
-      );
-
-
-    gl.enableVertexAttribArray(
-      positionLocation
-    );
-
-
-    gl.vertexAttribPointer(
-      positionLocation,
-      2,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
-
-
-
-    /* ============================================================
-       UNIFORMS
-    ============================================================ */
-
-    const uniforms = {
-
-      resolution:
-        gl.getUniformLocation(
-          program,
-          "u_resolution"
-        ),
-
-      time:
-        gl.getUniformLocation(
-          program,
-          "u_time"
-        ),
-
-      scroll:
-        gl.getUniformLocation(
-          program,
-          "u_scroll"
-        ),
-
-      pointer:
-        gl.getUniformLocation(
-          program,
-          "u_pointer"
-        ),
-
-      velocity:
-        gl.getUniformLocation(
-          program,
-          "u_velocity"
-        ),
-
-      presence:
-        gl.getUniformLocation(
-          program,
-          "u_presence"
-        ),
-
-      down:
-        gl.getUniformLocation(
-          program,
-          "u_down"
-        ),
-
-      pulse:
-        gl.getUniformLocation(
-          program,
-          "u_pulse"
-        ),
-
-      seed:
-        gl.getUniformLocation(
-          program,
-          "u_seed"
-        )
-    };
-
-
-
-    /* ============================================================
-       STATE
-    ============================================================ */
-
-    let dpr = 1;
-
-
-    let pointer = {
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2
-    };
-
-
-    let targetPointer = {
-      ...pointer
-    };
-
-
-    let previousPointer = {
-      ...pointer
-    };
-
-
-    let velocity = {
-      x: 0,
-      y: 0
-    };
-
-
-    let smoothVelocity = {
-      x: 0,
-      y: 0
-    };
-
-
-    let pointerPresence = 0;
-    let targetPresence = 0;
-
-
-    let pointerDown = 0;
-    let targetPointerDown = 0;
-
-
-    let lastInteraction =
-      performance.now();
-
-
-    let pulseStartedAt =
-      -10000;
-
-
-    let currentScroll = 0;
-    let targetScroll = 0;
-
-
-    const seed =
-      Math.random() * 1000;
-
-
-
-    /* ============================================================
-       RESPONSIVE CANVAS
-    ============================================================ */
-
-    function resize() {
-
-      /*
-        Capping DPR at 2 keeps phones and Retina Macs
-        smooth while still looking extremely sharp.
-      */
-
-      dpr =
-        Math.min(
-          window.devicePixelRatio || 1,
-          2
-        );
-
-
-      const width =
-        Math.floor(
-          window.innerWidth * dpr
-        );
-
-
-      const height =
-        Math.floor(
-          window.innerHeight * dpr
-        );
-
-
-      if (
-        canvas.width !== width ||
-        canvas.height !== height
-      ) {
-
-        canvas.width = width;
-        canvas.height = height;
-
-
-        gl.viewport(
-          0,
-          0,
-          width,
-          height
-        );
-      }
-    }
-
-
-    window.addEventListener(
-      "resize",
-      resize
-    );
-
-
-    resize();
-
-
-
-    /* ============================================================
-       POINTER INTERACTION
-    ============================================================ */
-
-    function updateTargetPointer(
-      clientX,
-      clientY
-    ) {
-
-      targetPointer.x =
-        clientX;
-
-      targetPointer.y =
-        clientY;
-
-
-      lastInteraction =
-        performance.now();
-
-
-      targetPresence = 1;
-    }
-
-
-
-    window.addEventListener(
-      "pointermove",
+    // If the cursor leaves the browser window,
+    // gently return the light to the center.
+    document.addEventListener("mouseleave", () => {
+      clearTimeout(inactivityTimer);
+      returnToCenter();
+    });
+
+    // -------------------------
+    // MOBILE / TOUCH
+    // -------------------------
+
+    document.addEventListener(
+      "touchstart",
       (event) => {
+        if (!event.touches.length) return;
 
-        updateTargetPointer(
-          event.clientX,
-          event.clientY
+        const touch = event.touches[0];
+
+        updateTarget(
+          touch.clientX,
+          touch.clientY
         );
       },
-      {
-        passive: true
-      }
+      { passive: true }
     );
 
-
-
-    window.addEventListener(
-      "pointerdown",
+    document.addEventListener(
+      "touchmove",
       (event) => {
+        if (!event.touches.length) return;
 
-        updateTargetPointer(
-          event.clientX,
-          event.clientY
+        const touch = event.touches[0];
+
+        updateTarget(
+          touch.clientX,
+          touch.clientY
         );
-
-
-        targetPointerDown = 1;
-
-
-        pulseStartedAt =
-          performance.now();
       },
-      {
-        passive: true
-      }
+      { passive: true }
     );
 
-
-
-    window.addEventListener(
-      "pointerup",
+    // As soon as the finger is lifted,
+    // begin drifting back toward center.
+    document.addEventListener(
+      "touchend",
       () => {
+        clearTimeout(inactivityTimer);
 
-        targetPointerDown = 0;
+        inactivityTimer = setTimeout(() => {
+          returnToCenter();
+        }, 150);
       },
-      {
-        passive: true
-      }
+      { passive: true }
     );
 
-
-
-    window.addEventListener(
-      "pointercancel",
+    document.addEventListener(
+      "touchcancel",
       () => {
-
-        targetPointerDown = 0;
+        clearTimeout(inactivityTimer);
+        returnToCenter();
       },
-      {
-        passive: true
-      }
+      { passive: true }
     );
 
-
-
-    window.addEventListener(
-      "blur",
-      () => {
-
-        targetPointerDown = 0;
-        targetPresence = 0;
-      }
-    );
-
-
-
-    /* ============================================================
-       SCROLL
-    ============================================================ */
-
-    function updateScroll() {
-
-      const maximum =
-        document.documentElement.scrollHeight -
-        window.innerHeight;
-
-
-      targetScroll =
-        maximum > 0
-          ? window.scrollY / maximum
-          : 0;
-
-
-      targetScroll =
-        Math.max(
-          0,
-          Math.min(
-            1,
-            targetScroll
-          )
-        );
-    }
-
-
-    window.addEventListener(
-      "scroll",
-      updateScroll,
-      {
-        passive: true
-      }
-    );
-
-
-    updateScroll();
-
-
-
-    /* ============================================================
-       RENDER LOOP
-    ============================================================ */
-
-    const startedAt =
-      performance.now();
-
-
-    function render(now) {
-
-      resize();
-
-
-      const elapsed =
-        (now - startedAt) /
-        1000;
-
-
-      /*
-        If nobody has interacted for a while, the "lens"
-        becomes autonomous and begins slowly wandering.
-
-        The moment the user returns, control immediately
-        transfers back to them.
-      */
-
-      const idleTime =
-        now -
-        lastInteraction;
-
-
-      if (
-        idleTime >
-        1800
-      ) {
-
-        targetPresence =
-          0.62;
-
-
-        targetPointer.x =
-          window.innerWidth *
-          (
-            0.5 +
-            0.18 *
-            sin(
-              elapsed * 0.19
-            )
-          );
-
-
-        targetPointer.y =
-          window.innerHeight *
-          (
-            0.5 +
-            0.14 *
-            sin(
-              elapsed * 0.13 +
-              1.7
-            )
-          );
-      }
-
-
-
-      /*
-        Smooth pointer movement.
-
-        User interaction is deliberately faster than
-        autonomous movement.
-      */
-
-      const followSpeed =
-        idleTime < 1800
-          ? 0.16
-          : 0.018;
-
-
-      pointer.x +=
-        (
-          targetPointer.x -
-          pointer.x
-        ) *
-        followSpeed;
-
-
-      pointer.y +=
-        (
-          targetPointer.y -
-          pointer.y
-        ) *
-        followSpeed;
-
-
-
-      /*
-        Pointer velocity creates more turbulence.
-      */
-
-      velocity.x =
-        pointer.x -
-        previousPointer.x;
-
-
-      velocity.y =
-        pointer.y -
-        previousPointer.y;
-
-
-      smoothVelocity.x +=
-        (
-          velocity.x -
-          smoothVelocity.x
-        ) *
-        0.18;
-
-
-      smoothVelocity.y +=
-        (
-          velocity.y -
-          smoothVelocity.y
-        ) *
-        0.18;
-
-
-      previousPointer.x =
-        pointer.x;
-
-
-      previousPointer.y =
-        pointer.y;
-
-
-
-      /*
-        Ease interaction states.
-      */
-
-      pointerPresence +=
-        (
-          targetPresence -
-          pointerPresence
-        ) *
-        0.045;
-
-
-      pointerDown +=
-        (
-          targetPointerDown -
-          pointerDown
-        ) *
-        0.10;
-
-
-      currentScroll +=
-        (
-          targetScroll -
-          currentScroll
-        ) *
-        0.055;
-
-
-
-      /*
-        Scroll indicator.
-      */
-
-      progress.style.setProperty(
-        "--scroll",
-        currentScroll
-      );
-
-
-
-      /*
-        Pulse age.
-      */
-
-      const pulseAge =
-        (
-          now -
-          pulseStartedAt
-        ) /
-        1000;
-
-
-
-      /*
-        Send uniforms to GPU.
-      */
-
-      gl.uniform2f(
-        uniforms.resolution,
-        canvas.width,
-        canvas.height
-      );
-
-
-      gl.uniform1f(
-        uniforms.time,
-        elapsed
-      );
-
-
-      gl.uniform1f(
-        uniforms.scroll,
-        currentScroll
-      );
-
-
-      /*
-        WebGL's vertical coordinates run upward,
-        browser pointer coordinates run downward.
-      */
-
-      gl.uniform2f(
-        uniforms.pointer,
-        pointer.x * dpr,
-        (
-          window.innerHeight -
-          pointer.y
-        ) * dpr
-      );
-
-
-      gl.uniform2f(
-        uniforms.velocity,
-        smoothVelocity.x /
-          window.innerWidth,
-
-        -smoothVelocity.y /
-          window.innerHeight
-      );
-
-
-      gl.uniform1f(
-        uniforms.presence,
-        pointerPresence
-      );
-
-
-      gl.uniform1f(
-        uniforms.down,
-        pointerDown
-      );
-
-
-      gl.uniform1f(
-        uniforms.pulse,
-        pulseAge
-      );
-
-
-      gl.uniform1f(
-        uniforms.seed,
-        seed
-      );
-
-
-      gl.drawArrays(
-        gl.TRIANGLES,
-        0,
-        3
-      );
-
-
-      requestAnimationFrame(
-        render
-      );
-    }
-
-
-    requestAnimationFrame(
-      render
-    );
+    // Start the continuous smooth animation.
+    animate();
   </script>
 
 </body>
